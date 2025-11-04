@@ -6,7 +6,6 @@
     <title>CALMATEX - Generador de Sensibilidad Free Fire</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        /* Su CSS permanece sin cambios */
         :root {
             --primary: #00ff88;
             --secondary: #00d1ff;
@@ -234,6 +233,118 @@
             background: var(--primary);
             color: #000;
         }
+        /* Estilos para el menú lateral izquierdo */
+        .menu-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(10, 10, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(0, 255, 136, 0.2);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 30;
+            overflow-y: auto;
+        }
+        .menu-container.open {
+            transform: translateX(0);
+        }
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 31;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            padding: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+        .menu-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.8);
+        }
+        .menu-toggle span {
+            width: 25px;
+            height: 3px;
+            background: #fff;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        .menu-toggle.open span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        .menu-toggle.open span:nth-child(2) {
+            opacity: 0;
+        }
+        .menu-toggle.open span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -6px);
+        }
+        .menu-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        .menu-header h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary);
+            font-size: 1.4rem;
+        }
+        .music-list {
+            padding: 20px 0;
+        }
+        .music-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+        }
+        .music-item:hover, .music-item.active {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: var(--primary);
+        }
+        .music-item::before {
+            content: '▶';
+            margin-right: 10px;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        .music-item.active::before {
+            content: '⏸';
+        }
+        .music-title {
+            font-size: 1rem;
+            color: #fff;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 25;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
         .music-player {
             position: absolute;
             top: 20px;
@@ -401,11 +512,35 @@
             .volume-control { top: 70px; width: 100px; }
             .btn-music:hover { transform: translateY(-2px) scale(1.05); }
             .btn-music.playing { animation: pulse 2s infinite ease-in-out, rotate-slow 5s linear infinite; }
+            .menu-container { width: 100%; }
+            .menu-toggle { left: 10px; top: 10px; width: 45px; height: 45px; }
+            .menu-toggle span { width: 20px; height: 2px; }
         }
     </style>
 </head>
 <body>
     <div class="bg-animation" id="bg-animation"></div>
+    
+    <!-- Overlay para cerrar el menú -->
+    <div class="overlay" id="menu-overlay"></div>
+    
+    <!-- Menú lateral izquierdo -->
+    <div class="menu-container" id="menu-container">
+        <div class="menu-header">
+            <h3>Playlist de Música</h3>
+        </div>
+        <div class="music-list" id="music-list">
+            <!-- Los ítems se generan dinámicamente en JavaScript -->
+        </div>
+    </div>
+    
+    <!-- Botón hamburguesa para abrir el menú -->
+    <button class="menu-toggle" id="menu-toggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+    
     <div class="container">
         <header>
             <h1 class="logo">CALMATEX</h1>
@@ -508,44 +643,119 @@
     </div>
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // YouTube Player API - MODIFICADO PARA LISTA DE REPRODUCCIÓN
+        // YouTube Player API - MODIFICADO PARA MEJORAR LA CARGA Y REPRODUCCIÓN
         let player;
         let isPlaying = false;
+        let currentTrackIndex = -1; // Índice de la pista actual
         const playIcon = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
         const pauseIcon = '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
 
-        // NUEVO: Matriz de IDs de videos (reemplace con sus videos de música)
-        const videoIds = [
-            'wJnBTPUQS5A',  // Su video original
-            'dQw4w9WgXcQ',  // Ejemplo 1: Video de música libre
-            'kJQP7kiw5Fk'   // Ejemplo 2: Otro video de música libre
-            // Agregue más IDs aquí, separados por comas
+        // Lista de pistas con nombres y IDs (actualizado con el nuevo video)
+        const musicTracks = [
+            { id: 'wJnBTPUQS5A', title: 'Pista 1 - Música de Fondo Original' },
+            { id: '3aevyrmqbY0', title: 'FLOW - HERO -Kibou no uta-' }
+            // Agregue más si desea
         ];
 
         function onYouTubeIframeAPIReady() {
-            // MODIFICADO: Usar el primer ID como video inicial y la lista completa como playlist
-            const playlist = videoIds.join(',');  // Une los IDs en una cadena separada por comas
             player = new YT.Player('youtube-player', {
                 height: '0',
                 width: '0',
-                videoId: videoIds[0],  // Inicia con el primer video
+                videoId: musicTracks[0].id, // Inicia con la primera pista
                 playerVars: {
                     'autoplay': 0,
                     'controls': 0,
                     'showinfo': 0,
                     'rel': 0,
                     'fs': 0,
-                    'loop': 1,  // Bucle infinito de la playlist
-                    'playlist': playlist  // Lista de reproducción secuencial
+                    'enablejsapi': 1  // Asegura API JS habilitada
                 },
                 events: {
-                    'onReady': onPlayerReady
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
                 }
             });
         }
 
-        // El resto de la función onPlayerReady permanece igual
+        function onPlayerStateChange(event) {
+            const musicIcon = document.getElementById('music-icon');
+            const musicToggle = document.getElementById('music-toggle');
+            if (event.data === YT.PlayerState.PLAYING) {
+                isPlaying = true;
+                musicIcon.innerHTML = pauseIcon;
+                musicToggle.classList.add('playing');
+            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                isPlaying = false;
+                musicIcon.innerHTML = playIcon;
+                musicToggle.classList.remove('playing');
+            }
+        }
+
+        // Función para seleccionar y reproducir una pista (mejorada con verificación)
+        function selectTrack(index) {
+            if (index < 0 || index >= musicTracks.length || !player) return;
+            currentTrackIndex = index;
+            const track = musicTracks[index];
+            // Carga el video y reproduce (loadVideoById maneja la reproducción)
+            player.loadVideoById(track.id);
+            // Forzar reproducción después de un breve delay para asegurar carga
+            setTimeout(() => {
+                if (player && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                    player.playVideo();
+                }
+            }, 500);
+            updateActiveTrack();
+            closeMenu();
+        }
+
+        // Actualizar el ítem activo en la lista
+        function updateActiveTrack() {
+            const items = document.querySelectorAll('.music-item');
+            items.forEach((item, i) => {
+                item.classList.toggle('active', i === currentTrackIndex);
+            });
+        }
+
+        // Generar lista de música dinámicamente (movido a onPlayerReady para asegurar readiness)
+        function generateMusicList() {
+            const list = document.getElementById('music-list');
+            list.innerHTML = '';
+            musicTracks.forEach((track, index) => {
+                const item = document.createElement('div');
+                item.className = 'music-item';
+                item.innerHTML = `<span class="music-title">${track.title}</span>`;
+                item.addEventListener('click', () => selectTrack(index));
+                list.appendChild(item);
+            });
+            // Marcar la primera como activa por defecto
+            if (musicTracks.length > 0) {
+                updateActiveTrack(); // Usa la función para consistencia
+            }
+        }
+
+        // Control del menú
+        function toggleMenu() {
+            const menu = document.getElementById('menu-container');
+            const toggle = document.getElementById('menu-toggle');
+            const overlay = document.getElementById('menu-overlay');
+            menu.classList.toggle('open');
+            toggle.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        function closeMenu() {
+            const menu = document.getElementById('menu-container');
+            const toggle = document.getElementById('menu-toggle');
+            const overlay = document.getElementById('menu-overlay');
+            menu.classList.remove('open');
+            toggle.classList.remove('open');
+            overlay.classList.remove('open');
+        }
+
         function onPlayerReady(event) {
+            // Generar la lista DESPUÉS de que el player esté listo
+            generateMusicList();
+            
             const musicToggle = document.getElementById('music-toggle');
             const musicIcon = document.getElementById('music-icon');
             const musicTriggerArea = document.querySelector('.music-trigger-area');
@@ -554,7 +764,7 @@
             musicIcon.innerHTML = playIcon; // Ícono inicial: play
             let hideTimeout;
             // Establecer volumen inicial
-            player.setVolume(50); // Volumen inicial al 50%
+            player.setVolume(50);
             volumeSlider.value = 50;
             // Función para mostrar el botón y el control de volumen
             function showButton() {
@@ -564,7 +774,7 @@
                 hideTimeout = setTimeout(() => {
                     musicToggle.classList.add('hidden');
                     volumeControl.classList.add('hidden');
-                }, 3000); // Oculta después de 3 segundos de inactividad
+                }, 3000);
             }
             // Función para reiniciar el temporizador
             function resetHideTimeout() {
@@ -589,22 +799,10 @@
             musicToggle.addEventListener('click', function() {
                 if (isPlaying) {
                     player.pauseVideo();
-                    musicIcon.classList.add('fade');
-                    setTimeout(() => {
-                        musicIcon.innerHTML = playIcon;
-                        musicIcon.classList.remove('fade');
-                    }, 300);
-                    musicToggle.classList.remove('playing');
-                    isPlaying = false;
                 } else {
-                    player.playVideo();
-                    musicIcon.classList.add('fade');
-                    setTimeout(() => {
-                        musicIcon.innerHTML = pauseIcon;
-                        musicIcon.classList.remove('fade');
-                    }, 300);
-                    musicToggle.classList.add('playing');
-                    isPlaying = true;
+                    if (currentTrackIndex >= 0) {
+                        player.playVideo();
+                    }
                 }
                 resetHideTimeout();
             });
@@ -613,6 +811,10 @@
                 musicToggle.classList.add('hidden');
                 volumeControl.classList.add('hidden');
             }, 3000);
+
+            // Event listeners para el menú (ahora después de ready)
+            document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
+            document.getElementById('menu-overlay').addEventListener('click', closeMenu);
         }
 
         // Su código de partículas de fondo permanece sin cambios
