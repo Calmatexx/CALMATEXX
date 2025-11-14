@@ -294,6 +294,15 @@
             box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
             transform: scale(1.02);
         }
+        select option,
+        select optgroup {
+            background: white;
+            color: black;
+        }
+        select optgroup option {
+            background: white;
+            color: black;
+        }
         .btn-generate {
             display: block;
             width: 100%;
@@ -419,7 +428,7 @@
             color: #000;
             transform: scale(1.1);
         }
-        /* Estilos para el menú lateral izquierdo */
+        /* Estilos para el menú lateral izquierdo - MEJORADOS */
         .menu-container {
             position: fixed;
             top: 0;
@@ -500,12 +509,16 @@
         .music-item {
             display: flex;
             align-items: center;
-            padding: 15px 20px;
+            padding: 18px 20px; /* Aumentado para mejor espaciado */
             cursor: pointer;
             transition: all 0.3s ease;
             border-bottom: 1px solid rgba(0, 255, 136, 0.1);
             position: relative;
             overflow: hidden;
+            background: linear-gradient(to right, transparent, rgba(0, 255, 136, 0.02)); /* Fondo sutil para profundidad */
+        }
+        .music-item:last-child {
+            border-bottom: none;
         }
         .music-item::before {
             content: '';
@@ -514,32 +527,66 @@
             top: 0;
             bottom: 0;
             width: 0;
-            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.2), transparent);
-            transition: width 0.3s ease;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.15), transparent);
+            transition: width 0.4s ease; /* Suavizado en la transición */
         }
         .music-item:hover::before, .music-item.active::before {
             width: 100%;
         }
         .music-item:hover, .music-item.active {
-            background: rgba(0, 255, 136, 0.1);
-            border-color: var(--primary);
-            transform: translateX(5px);
+            background: rgba(0, 255, 136, 0.12); /* Fondo más pronunciado en hover/active */
+            border-left: 4px solid var(--primary); /* Borde izquierdo para énfasis */
+            transform: translateX(8px); /* Mayor desplazamiento para dinamismo */
+            box-shadow: 0 2px 10px rgba(0, 255, 136, 0.1); /* Sombra sutil */
         }
-        .music-item::after {
-            content: '▶';
-            margin-right: 10px;
+        .music-icon {
+            font-size: 1.3rem; /* Icono más grande */
             color: var(--primary);
-            font-size: 1.2rem;
+            margin-right: 16px; /* Espaciado consistente */
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0, 255, 136, 0.1); /* Fondo circular sutil para el icono */
             transition: all 0.3s ease;
         }
-        .music-item.active::after {
-            content: '⏸';
+        .music-item.active .music-icon {
+            background: rgba(0, 255, 136, 0.2);
+            color: #fff;
+            transform: scale(1.1);
+        }
+        .music-item.active .music-icon::before {
+            content: '⏸'; /* Icono de pausa para activo */
         }
         .music-title {
+            flex: 1; /* Ocupa el espacio disponible */
             font-size: 1rem;
+            font-weight: 400; /* Peso normal para legibilidad */
             color: #fff;
             z-index: 1;
             position: relative;
+            white-space: nowrap; /* Evita saltos de línea en títulos largos */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Trunca títulos largos con puntos suspensivos */
+        }
+        .music-item:hover .music-title,
+        .music-item.active .music-title {
+            color: var(--primary); /* Color destacado en hover/active */
+            font-weight: 500; /* Mayor peso para énfasis */
+        }
+        .music-duration {
+            margin-left: auto; /* Empuja a la derecha */
+            color: #aaa;
+            font-size: 0.85rem;
+            font-weight: 300;
+            padding-left: 10px;
+            transition: color 0.3s ease;
+        }
+        .music-item:hover .music-duration,
+        .music-item.active .music-duration {
+            color: var(--primary);
         }
         .overlay {
             position: fixed;
@@ -872,6 +919,16 @@
                 font-size: 1.1rem;
             }
             .btn-music { animation-duration: 3s; }
+            /* Ajustes móviles para playlist */
+            .music-item {
+                padding: 16px 18px; /* Reducido para móviles */
+            }
+            .music-icon {
+                width: 28px;
+                height: 28px;
+                font-size: 1.1rem;
+                margin-right: 12px;
+            }
         }
     </style>
 </head>
@@ -1062,6 +1119,8 @@
             { id: 'nkll0StZJLA', title: 'Starset - My Demons' },
             { id: 'PgF29M69QXg', title: 'Bibi Babydoll e DJ Brunin XM - Automotivo Bibi Fogosa' }
         ];
+        // Duraciones ficticias para mejorar el diseño de la playlist
+        const durations = ['3:45', '4:12', '2:58', '3:20', '5:05', '3:50', '4:30', '2:45'];
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('youtube-player', {
                 height: '0',
@@ -1124,14 +1183,18 @@
                 item.classList.toggle('active', i === currentTrackIndex);
             });
         }
-        // Generar lista de música dinámicamente (movido a onPlayerReady para asegurar readiness)
+        // Generar lista de música dinámicamente con estructura mejorada (MEJORADO)
         function generateMusicList() {
             const list = document.getElementById('music-list');
             list.innerHTML = '';
             musicTracks.forEach((track, index) => {
                 const item = document.createElement('div');
                 item.className = 'music-item';
-                item.innerHTML = `<span class="music-title">${track.title}</span>`;
+                item.innerHTML = `
+                    <div class="music-icon">▶</div>
+                    <span class="music-title">${track.title}</span>
+                    <span class="music-duration">${durations[index % durations.length]}</span>
+                `;
                 item.addEventListener('click', () => selectTrack(index));
                 list.appendChild(item);
             });
